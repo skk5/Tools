@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# -*- coding: utf-8 -*-
 
 from enum import Enum, unique
 from os import path
@@ -14,7 +15,13 @@ class StateType(Enum):
 
 
 class StateMapNote(object):
-    def __init__(self, snt, ways, name="", include_end=False):
+    """state-map-note.
+    :param snt: type of this state note.
+    :param ways: out ways of this note.
+    :param name: name of note
+    :param include_end: when out of this state, should include the transfer symbol
+    """
+    def __init__(self, snt, ways, name, include_end=False):
         self.name = name
         self.type = snt
         self.transfer_ways = ways  # k: symbols, v: StateNoteName
@@ -60,7 +67,7 @@ class StateMapNote(object):
         return False
 
 
-class CommentFilter(object):
+class CodeFilter(object):
     def __init__(self):
         self.cur_state = None
         self.state_map = {}
@@ -76,7 +83,7 @@ class CommentFilter(object):
             return True
         return False
 
-    def filter(self, in_file, out_file):
+    def filter(self, in_file, out_file, out_type):
         if not self._self_check():
             print("self check error")
             return
@@ -93,15 +100,24 @@ class CommentFilter(object):
                     self.cur_state = ret[1]
                     csn = self._find_cur_state_note()
 
-                    if ret[0] is not None and ((csn == n and n.type != StateType.COMMENT) or (csn != n and ((n.include_end and n.type != StateType.COMMENT) or (not n.include_end and csn.type != StateType.COMMENT)))):
-                        out_file.write(ret[0])
+                    if out_type == StateType.CODE:
+                        if ret[0] is not None and ((csn == n and n.type != StateType.COMMENT) or (csn != n and ((n.include_end and n.type != StateType.COMMENT) or (not n.include_end and csn.type != StateType.COMMENT)))):
+                            out_file.write(ret[0])
+                    elif out_type == StateType.STRING:
+                        if ret[0] is not None and ((n.include_end and n.type == StateType.STRING or n.type == StateType.ESCAPE) or (not n.include_end and csn.type == StateType.STRING or csn.type == StateType.ESCAPE)):
+                            out_file.write(ret[0].replace('\n', ''))
+                            if (n.type == StateType.STRING or n.type == StateType.ESCAPE) and not (csn.type == StateType.STRING or csn.type == StateType.ESCAPE):
+                                out_file.write('\n')
+                    elif out_type == StateType.COMMENT:
+                        if ret[0] is not None and ((n.include_end and n.type == StateType.COMMENT) or (not n.include_end and n.type == StateType.COMMENT)):
+                            out_file.write(ret[0])
 
     def load_from_str(self, map_desc):
         pass
 
 
-def filter_objc_source_file(in_file, out_file):
-    _filter = CommentFilter()
+def filter_objc_source_file(in_file, out_file, out_type=StateType.CODE):
+    _filter = CodeFilter()
     _filter.state_map = {
         'starter': StateMapNote(StateType.CODE, {
             '@"': "oc_string",
@@ -133,7 +149,7 @@ def filter_objc_source_file(in_file, out_file):
 
     _filter.cur_state = "starter"
 
-    _filter.filter(in_file, out_file)
+    _filter.filter(in_file, out_file, out_type)
 
 
 def main():
