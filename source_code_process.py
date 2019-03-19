@@ -4,14 +4,15 @@
 from enum import Enum, unique
 from os import path
 from sys import argv
+import argparse
 
 
 @unique
 class StateType(Enum):
-    CODE = 1,
-    STRING = 2,
-    ESCAPE = 3,
-    COMMENT = 4,
+    CODE = 0
+    STRING = 1
+    COMMENT = 2
+    ESCAPE = 3
 
 
 class StateMapNote(object):
@@ -153,22 +154,28 @@ def filter_objc_source_file(in_file, out_file, out_type=StateType.CODE):
 
 
 def main():
-    if len(argv) < 2:
-        print("Please attach code file.\nUsage: 'python3 source_code_process.py in_file_path [out_file_path]'")
-        exit(1)
+    arg_parser = argparse.ArgumentParser()
+    arg_parser.add_argument("source_code_file")
+    arg_parser.add_argument('-o', "--out_file_path", help="out file path;if not specified, will write to {source_code_file_path_and_name}_trimmed{source_code_file_ext}")
+    arg_parser.add_argument('-t', '--out_type', type=int, choices=[0, 1, 2], help="type what you want: 0 means code, 1 means only string, 2 means comment. defaults 0", default=0)
 
-    code_file_path = path.expanduser(argv[1])
-    # code_file_path = path.expanduser('~/Documents/TestMachO/TestMachO/AppDelegate.m')
+    args = arg_parser.parse_args()
 
-    if len(argv) >= 3:
-        out_file_path = path.expanduser(argv[2])
+    in_file_path = path.expanduser(args.source_code_file)
+
+    if args.out_file_path is not None:
+        out_file_path = path.expanduser(args.out_file_path)
     else:
-        in_path_split = path.splitext(code_file_path)
+        in_path_split = path.splitext(args.source_code_file)
         out_file_path = in_path_split[0] + "_trimmed" + in_path_split[1]
 
-    with open(code_file_path, 'r') as f:
+    ot = StateType.STRING
+    if args.out_type:
+        ot = StateType(args.out_type)
+
+    with open(in_file_path, 'r', errors='ignore') as f:
         with open(out_file_path, 'w+') as o:
-            filter_objc_source_file(f, o)
+            filter_objc_source_file(f, o, ot)
 
 
 if __name__ == "__main__":
