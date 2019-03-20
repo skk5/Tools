@@ -1,3 +1,5 @@
+#! /usr/bin/python3
+# -*- coding: utf-8 -*-
 
 import os
 from hashlib import md5
@@ -85,7 +87,7 @@ def get_str_pure_content(s: str):
     return s
 
 
-def find_unused_resource_file(project_root_path, resource_exts=default_resource_exts, code_exts=default_code_exts):
+def find_unused_resource_file(project_root_path, resource_exts=default_resource_exts, code_exts=default_code_exts, check_duplication=False):
     """
     Find unused resource file in project of Xcode.
     :param project_root_path: project root path.
@@ -96,11 +98,12 @@ def find_unused_resource_file(project_root_path, resource_exts=default_resource_
 
     project_root_path = os.path.expanduser(project_root_path)
     if os.path.isfile(project_root_path):
-        stdout.write('You should attach a dir, not a file.\n')
+        print('You should attach a dir, not a file.')
         exit(1)
 
     print("Scanning...", end='')
     stdout.flush()
+
     resource_files, code_files = find_resource_and_code(project_root_path, resource_exts, code_exts)
     resource_file_names = set()
     for rf in resource_files:
@@ -111,6 +114,10 @@ def find_unused_resource_file(project_root_path, resource_exts=default_resource_
         resource_file_names.add(file_name_without_ext + file_ext)
 
     print("\nScan Done!")
+
+    same_files = []
+    if check_duplication:
+        same_files = check_same_resource(resource_files)
 
     if len(resource_file_names) > 0 and len(code_files) > 0:
         print("resource file: {}; code file: {}".format(len(resource_file_names), len(code_files)))
@@ -167,7 +174,7 @@ def find_unused_resource_file(project_root_path, resource_exts=default_resource_
 
     left_files = [x for x in resource_files if os.path.split(x)[-1] in resource_file_names]
 
-    return left_files
+    return left_files, same_files
 
 
 def main():
@@ -175,9 +182,10 @@ def main():
     if release:
         arg_parser = argparse.ArgumentParser()
         arg_parser.add_argument("path_to_project_root", help="path to project that you want to find unused resource files.")
-        arg_parser.add_argument("-c", "--code_exts", help="exts for code file.")
-        arg_parser.add_argument("-i", "--resource_exts", help="exts for resource file.")
+        arg_parser.add_argument("-c", "--code_exts", help="exts for code file, string separated by white space.")
+        arg_parser.add_argument("-i", "--resource_exts", help="exts for resource file, string separated by white space.")
         arg_parser.add_argument("-o", "--out_file", help="path to out file. defaults STDOUT")
+        arg_parser.add_argument("-d", "--deduplication", action="store_true", default=False, help="point out resource files with same content.")
 
         args = arg_parser.parse_args()
 
@@ -192,19 +200,29 @@ def main():
                     ret.append('.' + e)
             return ret
 
+        print("test: args: {}".format(args))
         format_args = {}
         if args.code_exts:
             format_args['code_exts'] = ext_check(args.code_exts.split(' '))
         if args.resource_exts:
             format_args['resource_exts'] = ext_check(args.resource_exts.split(' '))
+        format_args["check_duplication"] = args.deduplication
 
-        unused_files = find_unused_resource_file(args.path_to_project_root, **format_args)
+        unused_files, same_files = find_unused_resource_file(args.path_to_project_root, **format_args)
         if args.out_file:
             with open(os.path.expanduser(args.out_file), 'w+') as f:
-                f.write(unused_files)
+                f.write("Unused Files: \n")
+                f.write("\n".join(unused_files))
+
+                if len(same_files) > 0:
+                    f.write("\n\nFiles with same content:\n")
+                    f.write('\n'.join(same_files))
         else:
-            print("Result:")
+            print("Unused Files:")
             print("\n".join(unused_files))
+            if len(same_files) > 0:
+                print("\n\nFiles with same content:\n")
+                print('\n'.join(same_files))
     else:
         unused_files = find_unused_resource_file('/Users/ewingshen/Documents/TestMachO/')
         print("\n".join(unused_files))
