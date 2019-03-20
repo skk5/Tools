@@ -81,8 +81,10 @@ def get_str_pure_content(s: str):
     if s.endswith('"'):
         s = s[:-1]
 
-    if s.endswith('@2x') or s.endswith('@3x'):
-        s = s[:-3]
+    name, ext = os.path.splitext(s)
+    if name.endswith('@2x') or s.endswith('@3x'):
+        name = name[:-3]
+        s = name + ext
 
     return s
 
