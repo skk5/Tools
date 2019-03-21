@@ -4,26 +4,28 @@
 import argparse
 import os
 import re
+import shutil
 
 
-def patch_rename(file_or_dir: str, rename_fuc, recursive=False):
-    file_or_dir_name = os.path.split(file_or_dir)
+def patch_rename(file_or_dir: str, rename_fuc, temp_path, operation_records, recursive=False):
+    file_or_dir_name = os.path.split(file_or_dir)[-1]
     if file_or_dir_name.startswith('.'):
         return
 
     if os.path.isfile(file_or_dir):
         file_path, file_name = os.path.split(file_or_dir)
         new_file_name = rename_fuc(file_name)
-        new_file_path = os.path.join(file_path, new_file_name)
 
-        os.popen("mv {} {}".format(file_or_dir, new_file_path))
+        temp_file_path = os.path.join(temp_path, new_file_name)
+        shutil.copy2(file_or_dir, temp_file_path)
+        operation_records.append((file_or_dir, temp_file_path))
     elif os.path.isdir(file_or_dir):
         files_under_path = os.listdir(file_or_dir)
         for file in files_under_path:
             file_path = os.path.join(file_or_dir, file)
             if not recursive and os.path.isdir(file_path):
                 continue
-            patch_rename(file_path, rename_fuc, recursive)
+            patch_rename(file_path, rename_fuc, temp_path, operation_records, recursive)
     else:
         print("not a file or dir")
         exit(0)
@@ -47,13 +49,15 @@ def _format(format_str: str, args: [str]):
 
     def _format_imp(file_name):
         args_value = []
+        arg_idx = 0
         for arg_exp in args:
+            arg_idx += 1
             m = re.search(arg_exp, file_name)
             if m is None:
-                print("input error!")
+                print("argument({}) error!".format(arg_idx))
                 exit(0)
             args_value.append(m.group(0))
-        new_file_name = format_str.format(args_value)
+        new_file_name = format_str.format(*args_value)
         return new_file_name
 
     return _format_imp
@@ -78,10 +82,43 @@ def main():
 
     args = arg_parser.parse_args()
     print(args)
+    operation_records = []
+
+    if os.path.isfile(args.file_or_dir):
+        temp_dir = os.path.join(os.path.split(args.file_or_dir)[0], '.rename_tmp')
+    elif os.path.isdir(args.file_or_dir):
+        temp_dir = os.path.join(args.file_or_dir, '.rename_tmp')
+    else:
+        print("Please attach a file or dir.")
+        exit(0)
+
+    is_create_by_self = False
+    if not os.path.exists(temp_dir):
+        is_create_by_self = True
+        os.mkdir(temp_dir)
+    
     if args.command == 'rpl':
-        patch_rename(args.file_or_dir, _replace(args.old, args.new, args.E), args.r)
+        patch_rename(args.file_or_dir, _replace(args.old, args.new, args.E), temp_dir, operation_records, args.r)
     elif args.command == 'fmt':
-        patch_rename(args.file_or_dir, _format(args.format, args.arguments), args.r)
+        patch_rename(args.file_or_dir, _format(args.format, args.arguments), temp_dir, operation_records, args.r)
+
+    if len(operation_records) == 0:
+        print("Can't find any file to rename.")
+        exit(0)
+    
+    old_file, new_file = operation_records[0]
+    confirm = input("Rename Example:\n\t{} -> {}\nIs that you want? (If not, will rollback all operations.) y/n? : ".format(os.path.split(old_file)[-1], os.path.split(new_file)[-1]))
+    while confirm.lower() not in ['n', 'y', 'yes', 'no']:
+        confirm = input("Invalid input, please input again. y/n? : ")
+
+    if confirm.lower() in ['n', 'no']:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+    else:
+        for old, tmp in operation_records:
+            shutil.move(tmp, os.path.split(old)[0])
+            if os.path.exists(old):
+                os.remove(old)
+        shutil.rmtree(temp_dir, ignore_errors=True)
 
 
 if __name__ == '__main__':
