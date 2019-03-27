@@ -1,4 +1,4 @@
-#! /usr/bin/python3
+#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import argparse
@@ -81,7 +81,6 @@ def main():
     fmt_parser.add_argument('-r', action='store_true', help='recursive process files.')
 
     args = arg_parser.parse_args()
-    print(args)
     operation_records = []
 
     if os.path.isfile(args.file_or_dir):
