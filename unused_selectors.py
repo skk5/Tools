@@ -27,7 +27,7 @@ def _read_all_selrefs(link_map_path: str):
     symbols_reg_exp = re.compile(r'(0x[0-9A-F]+)(?:\s*)(0x[0-9A-F]+)(?:\s*\[\s*)(\d+)(?:\s*\]\s*[-+]\[)(\w*)(?:\s*)([^\]]*)(?:\])')
 
     file_id_2_name = {}
-    file_id_2_size = {}
+    file_name_2_selectors = {}
     reading_file_id = True
     with open(link_map_path, 'r', errors='ignore') as f:
         for line in f:
@@ -43,18 +43,19 @@ def _read_all_selrefs(link_map_path: str):
             m = symbols_reg_exp.search(line)
             if m:
                 (address, size, file_id, class_name, selector) = m.groups()
+                file_name = file_id_2_name[file_id]
+                if file_name in file_name_2_selectors:
+                    selectors = file_name_2_selectors[file_name]
+                    selectors.append((class_name, selector, size))
+                else:
+                    selectors = [(class_name, selector, size)]
+                    file_name_2_selectors[file_name] = selectors
+
+    return file_name_2_selectors
                 
 
 def _inner_process(line_map_path: str, executable_file_path: str):
-    
-    
-    
-
-
-
-
-
-    
+    pass
 
 
 def main():

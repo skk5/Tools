@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
-from hashlib import md5
+from utilities import get_file_md5
 from source_code_process import filter_objc_source_file, StateType
 from io import StringIO
 import argparse
@@ -48,11 +48,7 @@ def find_resource_and_code(path, resource_exts, code_exts):
 def check_same_resource(resource_files):
     file_md5_2_paths = {}
     for file in resource_files:
-        hash_md5 = md5()
-        with open(file, 'rb') as f:
-            for chunk in iter(lambda: f.read(4096), b""):
-                hash_md5.update(chunk)
-        md5_hex = hash_md5.hexdigest()
+        md5_hex = get_file_md5(file)
 
         if md5_hex in file_md5_2_paths:
             file_list = file_md5_2_paths[md5_hex]
