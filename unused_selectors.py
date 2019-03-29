@@ -10,7 +10,7 @@ from collections import namedtuple
 def _read_all_used_selrefs(executable_file_path: str) -> [str]:
     selrefs_file = os.popen("otool -v -s __DATA __objc_selrefs {}".format(executable_file_path))
     
-    selref_reg_exp = re.compile(r'(?:__TEXT:__objc_methname:)(\w*)')
+    selref_reg_exp = re.compile(r'(?:__TEXT:__objc_methname:)(\S*)')
     all_used_selectors = set()
 
     for line in selrefs_file:
@@ -59,12 +59,9 @@ def _inner_process(line_map_path: str, executable_file_path: str):
 
 
 def main():
-    test_s = "0x00008CD0	0x000002E4	[  1] +[QBarEncode encodeQRCodeWithStr:version:errLev:pData:pWidth:]"
-    # r'(0x\d+)(?:\s*)(0x\d+)(?:\s*\[\s*)(\d+)(?:\s*\]\s*[-+]\[)(\w*)(?:\s*)([^\]]*)(?:\])'
-    symbols_reg_exp = re.compile(r'(0x[0-9A-F]+)(?:\s*)(0x[0-9A-F]+)(?:\s*\[\s*)(\d+)(?:\s*\]\s*[-+]\[)(\w*)(?:\s*)([^\]]*)(?:\])')
-    print(symbols_reg_exp)
-    m = symbols_reg_exp.search(test_s)
-    print(m.groups())
+    arg_parser = argparse.ArgumentParser()
+    arg_parser.add_argument("exc_file", help="excutable file in ipa->payload. you can get by: unzip .ipa -> payload -> show content of package -> find the executable file.")
+    arg_parser.add_argument("-l", "--link_map", action="append", help=)
 
 if __name__ == "__main__":
     main()
