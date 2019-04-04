@@ -6,6 +6,7 @@ import re
 import argparse
 from collections import namedtuple
 
+method_black_list = ['.cxx_destruct']
 
 def _read_all_used_selrefs(executable_file_path: str) -> [str]:
     selrefs_file = os.popen("otool -v -s __DATA __objc_selrefs {}".format(executable_file_path))
@@ -52,16 +53,29 @@ def _read_all_selrefs(link_map_path: str):
                     file_name_2_selectors[file_name] = selectors
 
     return file_name_2_selectors
-                
 
-def _inner_process(line_map_path: str, executable_file_path: str):
-    pass
 
+def _inner_process(link_map_paths: [str], executable_file_path: str):
+    all_used_sels = _read_all_used_selrefs(os.path.expanduser(executable_file_path))
+    unused_sels = {}
+    for lmp in link_map_path:
+        link_map_path = os.path.expanduser(lmp)
+        link_map_name = os.path.basename(link_map_path)
+        file_name_2_selectors = _read_all_selrefs(link_map_path)
+        unused_sels_i = []
+        for k, v in file_name_2_selectors.items():
+            for (class_name, selector, size) in v:
+                if selector not in all_used_sels:
+                    unused_sels_i.append((class_name, selector, size))
+        unused_sels[link_map_name] = unused_sels_i
+    
+    # calc size.
+    
 
 def main():
     arg_parser = argparse.ArgumentParser()
-    arg_parser.add_argument("exc_file", help="excutable file in ipa->payload. you can get by: unzip .ipa -> payload -> show content of package -> find the executable file.")
-    arg_parser.add_argument("-l", "--link_map", action="append", help=)
+    arg_parser.add_argument("exc_file", help="excutable file in ipa->payload. you can get it at: unzip xx.ipa -> payload -> show content of package -> find the executable file.")
+    arg_parser.add_argument("-l", "--link_map", action="append", help="")
 
 if __name__ == "__main__":
     main()
