@@ -5,6 +5,7 @@ import os
 import re
 import argparse
 from collections import namedtuple
+from utilities import convert2Readable
 
 method_black_list = ['.cxx_destruct']
 
@@ -34,7 +35,6 @@ def _read_all_selrefs(link_map_path: str):
             m = object_number_reg_exp.search(line)
             if m:
                 (file_id, file_name) = m.groups()
-                print(file_id, file_name)
                 file_id_2_name[file_id] = file_name
                 continue
             
@@ -50,21 +50,6 @@ def _read_all_selrefs(link_map_path: str):
                     file_name_2_selectors[file_name] = selectors
 
     return file_name_2_selectors
-
-
-def _convert2Readable(size, base=10) -> str:
-    if type(size) is str:
-        size_int = int(size, base)
-    else:
-        size_int = size
-    if size_int < 1024:
-        return "{}B".format(size_int)
-    elif size_int < 1024 ** 2:
-        return "{}KB".format(size_int / 1024)
-    elif size_int < 1024 ** 3:
-        return "{}MB".format(size_int / 1024 ** 2)
-    else:
-        return "{}GB".format(size_int / 1024 ** 3)
 
 
 def _inner_process(link_map_paths: [str], executable_file_path: str):
@@ -88,7 +73,6 @@ def _inner_process(link_map_paths: [str], executable_file_path: str):
         size_result[link_map_name] = file_name_2_total_size
 
     output_file_path = os.path.join(os.path.dirname(os.path.expanduser(executable_file_path)), "result.txt")
-    print(output_file_path)
     while os.path.exists(output_file_path):
         output_file_path = output_file_path[:-4] + "0.txt"
     with open(output_file_path, 'w') as of:
@@ -97,7 +81,7 @@ def _inner_process(link_map_paths: [str], executable_file_path: str):
             of.write(k)
             of.write("\n")
             for (class_name, selector, size) in v:
-                of.write("[{} {}];({})\n".format(class_name, selector, _convert2Readable(size, 16)))
+                of.write("[{} {}];({})\n".format(class_name, selector, convert2Readable(size, 16)))
             
             lib_size_result = {}
             file_name_2_total_size = size_result[k]
@@ -111,11 +95,11 @@ def _inner_process(link_map_paths: [str], executable_file_path: str):
             
             of.write("\n\n")
             for file_name in sorted(file_name_2_total_size.keys()):
-                of.write("{}:\t{}\n".format(file_name, _convert2Readable(file_name_2_total_size[file_name])))
+                of.write("{}:\t{}\n".format(file_name, convert2Readable(file_name_2_total_size[file_name])))
 
             of.write("lib size:\n")
             for lib_name, size in lib_size_result.items():
-                of.write("{}:\t{}".format(lib_name, _convert2Readable(size)))
+                of.write("{}:\t{}".format(lib_name, convert2Readable(size)))
     
 
 
