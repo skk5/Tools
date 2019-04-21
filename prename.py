@@ -69,7 +69,7 @@ def _by_order():
     def _by_order_imp(file_name):
         ext = os.path.splitext(file_name)
         new_name = "{}.{}".format(inner_counter, ext)
-        inner_counter++
+        inner_counter += 1
         return new_name
     return _by_order_imp
 
