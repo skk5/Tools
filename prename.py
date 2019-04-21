@@ -63,6 +63,17 @@ def _format(format_str: str, args: [str]):
     return _format_imp
 
 
+def _by_order():
+    inner_counter = 0
+
+    def _by_order_imp(file_name):
+        ext = os.path.splitext(file_name)
+        new_name = "{}.{}".format(inner_counter, ext)
+        inner_counter++
+        return new_name
+    return _by_order_imp
+
+
 def main():
     arg_parser = argparse.ArgumentParser()
     sub_parsers = arg_parser.add_subparsers(help="commands", dest='command')
@@ -79,6 +90,9 @@ def main():
     fmt_parser.add_argument('format', help='format string: placeholder is {}.')
     fmt_parser.add_argument('-a', dest='arguments', action='append', help="regular expression search in file name.")
     fmt_parser.add_argument('-r', action='store_true', help='recursive process files.')
+
+    order_parser = sub_parsers.add_parser("order", help="rename file by order.")
+
 
     args = arg_parser.parse_args()
     operation_records = []
@@ -100,6 +114,8 @@ def main():
         patch_rename(args.file_or_dir, _replace(args.old, args.new, args.E), temp_dir, operation_records, args.r)
     elif args.command == 'fmt':
         patch_rename(args.file_or_dir, _format(args.format, args.arguments), temp_dir, operation_records, args.r)
+    elif args.command == 'order':
+        patch_rename(args.file_or_dir, _by_order(), temp_dir, operation_records, args.r)
 
     if len(operation_records) == 0:
         print("Can't find any file to rename.")
