@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import os
@@ -25,7 +25,7 @@ def _read_all_used_selrefs(executable_file_path: str) -> [str]:
 
 
 def _read_all_selrefs(link_map_path: str):
-    object_number_reg_exp = re.compile(r'(?:\s*\[\s*)(\d+)(?:\s*\])(?:\s*/.*/)(\S*)')
+    object_number_reg_exp = re.compile(r'(?:\s*\[\s*)(\d+)(?:\s*\])(?:\s*\.*/.*/)(\S*)')
     symbols_reg_exp = re.compile(r'(0x[0-9A-F]+)(?:\s*)(0x[0-9A-F]+)(?:\s*\[\s*)(\d+)(?:\s*\]\s*[-+]\[)(\w*)(?:\s*)([^\]]*)(?:\])')
 
     file_id_2_name = {}
@@ -38,8 +38,13 @@ def _read_all_selrefs(link_map_path: str):
                 file_id_2_name[file_id] = file_name
                 continue
             
+            # if len(file_id_2_name) > 0:
+            #     print(file_id_2_name)
+            #     exit(0)
+            
             m = symbols_reg_exp.search(line)
             if m:
+                print("find one")
                 (address, size, file_id, class_name, selector) = m.groups()
                 file_name = file_id_2_name[file_id]
                 if file_name in file_name_2_selectors:
@@ -54,6 +59,8 @@ def _read_all_selrefs(link_map_path: str):
 
 def _inner_process(link_map_paths: [str], executable_file_path: str):
     all_used_sels = _read_all_used_selrefs(os.path.expanduser(executable_file_path))
+    print(all_used_sels)
+    all_used_sels_list = [x for y in all_used_sels.values() for x in y]
     unused_sels = {}
     size_result = {}
     for lmp in link_map_paths:
@@ -65,7 +72,7 @@ def _inner_process(link_map_paths: [str], executable_file_path: str):
         for k, v in file_name_2_selectors.items():
             total_size = 0
             for (class_name, selector, size) in v:
-                if selector not in all_used_sels:
+                if selector not in all_used_sels_list:
                     unused_sels_i.append((class_name, selector, size))
                 total_size += int(size, 16)
             file_name_2_total_size[k] = total_size

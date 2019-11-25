@@ -3,6 +3,7 @@
 
 from hashlib import md5
 import re
+from os import path, listdir
 
 
 def get_file_md5(file_path: str):
@@ -63,3 +64,16 @@ def convertFromReadable(size: str) -> int:
     else:
         return 0
 
+
+def walk_files(process_func, dir_or_file_path, include_hidden_files=False):
+    dir_or_file_path = path.expanduser(dir_or_file_path)
+
+    if path.basename(dir_or_file_path).startswith('.') and not include_hidden_files:
+        return
+
+    if path.isdir(dir_or_file_path):
+        files = listdir(dir_or_file_path)
+        for file in [path.join(dir_or_file_path, f) for f in files]:
+            walk_files(process_func, file, include_hidden_files)
+    elif path.isfile(dir_or_file_path):
+        process_func(dir_or_file_path)
