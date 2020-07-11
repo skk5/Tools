@@ -67,8 +67,9 @@ def _by_order():
     inner_counter = 0
 
     def _by_order_imp(file_name):
-        ext = os.path.splitext(file_name)
-        new_name = "{}.{}".format(inner_counter, ext)
+        nonlocal inner_counter
+        ext = os.path.splitext(file_name)[-1]
+        new_name = "{}{}".format(inner_counter, ext)
         inner_counter += 1
         return new_name
     return _by_order_imp
@@ -92,7 +93,8 @@ def main():
     fmt_parser.add_argument('-r', action='store_true', help='recursive process files.')
 
     order_parser = sub_parsers.add_parser("order", help="rename file by order.")
-
+    order_parser.add_argument('file_or_dir')
+    order_parser.add_argument('-r', action='store_true')
 
     args = arg_parser.parse_args()
     operation_records = []
