@@ -29,7 +29,7 @@ def find_resource_and_code(path, resource_exts, code_exts):
         if os.path.split(file_path)[-1].startswith('.'):
             # ignore hidden files and dirs
             return
-        elif file_path.find('.appiconset/') != -1 or file_path.find('.launchimage/') != -1:
+        elif file_path.find('.appiconset/') != -1 or file_path.find('.launchimage/') != -1 or os.path.exists(file_path) == False:
             # ignore xcode appiconset and launchimage assets
             return
         elif os.path.isfile(file_path):

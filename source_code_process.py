@@ -43,6 +43,8 @@ class StateMapNote(object):
                 return None
             else:
                 self.char_buffer.clear()
+                if new_str == '**':
+                    self.char_buffer.append('*')
                 return new_str, self.name
 
         t = self._find_next_state(c)
@@ -97,6 +99,7 @@ class CodeFilter(object):
                     exit()
 
                 ret = n.eat(c)
+                # print("c is {}, ret is {}".format(c, ret))
                 if ret is not None:
                     self.cur_state = ret[1]
                     csn = self._find_cur_state_note()
@@ -135,6 +138,7 @@ def filter_objc_source_file(in_file, out_file, out_type=StateType.CODE):
             '\\': "c_escaper",
         }, "c_string", True),
         'single_comment': StateMapNote(StateType.COMMENT, {
+            "\\\n": "single_comment",
             "\n": "starter",
         }, "single_comment"),
         'multi_comment': StateMapNote(StateType.COMMENT, {
@@ -169,7 +173,7 @@ def main():
         in_path_split = path.splitext(args.source_code_file)
         out_file_path = in_path_split[0] + "_trimmed" + in_path_split[1]
 
-    ot = StateType.STRING
+    ot = StateType.CODE
     if args.out_type:
         ot = StateType(args.out_type)
 
